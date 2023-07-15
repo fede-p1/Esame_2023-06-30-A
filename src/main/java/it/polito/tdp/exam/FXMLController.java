@@ -7,7 +7,12 @@ package it.polito.tdp.exam;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleWeightedGraph;
+
+import it.polito.tdp.exam.model.Archi;
 import it.polito.tdp.exam.model.Model;
+import it.polito.tdp.exam.model.YearPlayers;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -35,10 +40,10 @@ public class FXMLController {
     private Button btnSimula; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbAnno"
-    private ComboBox<?> cmbAnno; // Value injected by FXMLLoader
+    private ComboBox<YearPlayers> cmbAnno; // Value injected by FXMLLoader
 
     @FXML // fx:id="cmbSquadra"
-    private ComboBox<?> cmbSquadra; // Value injected by FXMLLoader
+    private ComboBox<String> cmbSquadra; // Value injected by FXMLLoader
 
     @FXML // fx:id="txtResult"
     private TextArea txtResult; // Value injected by FXMLLoader
@@ -48,17 +53,48 @@ public class FXMLController {
 
     @FXML
     void handleCreaGrafo(ActionEvent event) {
+    	
+    	if (this.cmbSquadra.getValue() == null) {
+    		txtResult.setText("Scegli una squadra\n");
+    		return;
+    	}
 
+    	SimpleWeightedGraph<YearPlayers,DefaultWeightedEdge> graph = model.creaGrafo(this.cmbSquadra.getValue());
+    	
+    	txtResult.setText("Grafo creato con " + graph.vertexSet().size() + " vertici e " + graph.edgeSet().size() + " archi.\n\n");
+
+    	this.cmbAnno.getItems().clear();
+    	this.cmbAnno.getItems().addAll(graph.vertexSet());
+    	
+    	this.btnDettagli.setDisable(false);
+    	this.btnSimula.setDisable(false);
+    	
+    	
     }
 
     @FXML
     void handleDettagli(ActionEvent event) {
+    	
+    	if (this.cmbAnno.getValue() == null) {
+    		txtResult.setText("Scegli un anno\n");
+    		return;
+    	}
+    	
+    	txtResult.appendText("Dettagli per l'anno scelto:\n");
+    	
+    	for (Archi a : model.getDettagli(cmbAnno.getValue().getYear()))
+    		txtResult.appendText(cmbAnno.getValue().toString() + " <-> anno: " + a.getAnno().toString() + "; peso: " + a.getPeso() + '\n');
+    	
 
     }
 
     @FXML
     void handleSimula(ActionEvent event) {
 
+    	txtResult.setText("Num tifosi persi: " + model.run(this.cmbAnno.getValue().getYear(),Integer.parseInt(txtTifosi.getText())) + "\n\n");
+    	
+    	for (String player : model.getGiocatoriTifosi().keySet())
+    		txtResult.appendText(player + " -> num tifosi: " + model.getGiocatoriTifosi().get(player) + '\n');
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -75,6 +111,10 @@ public class FXMLController {
 
     public void setModel(Model model) {
         this.model = model;
+        this.btnDettagli.setDisable(true);
+    	this.btnSimula.setDisable(true);
+        
+        this.cmbSquadra.getItems().addAll(model.readTeams());
     }
 
 }
